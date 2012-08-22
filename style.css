@@ -1,0 +1,86 @@
+.scheisse {}
+/* this is some strange thing. If there is nothing on top of the 
+   div.imgcaption, the centered images will not have a colored bounding box 
+   and the image is left aligned.
+   might be a bug of an older dokuwiki version.
+ */
+
+
+div.imgcaption {
+    border: 1px solid #ccc;
+    padding: 3px !important;
+    background-color: #f9f9f9;  
+    font-size: 94%;
+    text-align: center;
+    width: auto;
+    overflow: hidden;
+    margin: 1px auto;
+    float: none;
+}
+
+div.imgcaptionleft {
+    border: 1px solid #ccc;
+    padding: 3px !important;
+    background-color: #f9f9f9;
+    font-size: 94%;
+    text-align: center;
+    width: auto;
+    overflow: hidden;
+    margin: 1px;
+    float: left;
+}
+
+div.imgcaptionright {
+    border: 1px solid #ccc;
+    padding: 3px !important;
+    background-color: #f9f9f9;
+    font-size: 94%;
+    text-align: center;
+    width: auto;
+    overflow: hidden;
+    margin: 1px;
+    float: right;
+}
+
+
+div.imgcaption a img {
+    border: 1px solid #ccc;
+    background-color:#FFFFFF;
+}
+div.imgcaptionleft a img {
+    border: 1px solid #ccc;
+    background-color:#FFFFFF;
+}
+div.imgcaptionright a img {
+    border: 1px solid #ccc;
+    background-color:#FFFFFF;
+}
+
+div.dokuwiki .undercaption {
+	 font-size: 95%;
+    
+}
+
+div.dokuwiki .undercaption a:hover {
+    text-decoration:none;
+}
+
+div.dokuwiki .undercaption span {
+    background-image:url(./magnify-clip.png);
+    background-repeat:no-repeat;
+  
+    margin:2px;
+    padding-left:15px; 
+    display:none;
+}
+
+
+div.imgcaption img.mediaright {
+  float: none;
+  margin: 0 0 0.5em 0;
+}
+
+div.imgcaption img.medialeft {
+  float: none;
+  margin: 0 0 0.5em 0;
+}
