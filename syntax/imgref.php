@@ -9,6 +9,10 @@
  * @author     Martin Heinemann <martin.heinemann@tudor.lu>
  */
  
+//if(!defined('DOKU_INC')) define('DOKU_INC',realpath(dirname(__FILE__).'/../../').'/');
+//if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+//require_once(DOKU_PLUGIN.'syntax.php');
+ 
 if (!defined('DOKU_INC')) die();
 
 if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
@@ -20,7 +24,7 @@ require_once DOKU_PLUGIN.'syntax.php';
  * All DokuWiki plugins to extend the parser/rendering mechanism
  * need to inherit from this class
  */
-class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
+class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
  	
 	
 	var $_figure_name_array = array("");
@@ -44,7 +48,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     function getPType(){ return 'block';}
 
     // must return a number lower than returned by native 'code' mode (200)
-    function getSort(){ return 196; }
+    function getSort(){ return 197; }
 
     // override default accepts() method to allow nesting 
     // - ie, to get the plugin accepts its own entry syntax
@@ -63,12 +67,10 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     * @see render()
     */
     function connectTo($mode) {
-        $this->Lexer->addEntryPattern('<imgcaption\s[^\r\n\|]*?>(?=.*?</imgcaption.*?>)',$mode,'plugin_imagereference_imgcaption');
-        $this->Lexer->addEntryPattern('<imgcaption\s[^\r\n\|]*?\|(?=[^\r\n]*>.*?</imgcaption.*>)',$mode,'plugin_imagereference_imgcaption');
+      $this->Lexer->addSpecialPattern('<imgref\s[^\r\n]*?>',$mode, 'plugin_imagereference_imgcaption');
     }
  
     function postConnect() {
-        $this->Lexer->addExitPattern('</imgcaption>', 'plugin_imagereference_imgcaption');
     }
  	
  
@@ -110,22 +112,13 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         list($case, $data) = $indata;
         if($mode == 'xhtml'){
             switch ($case) {
-               /* case 'imgref' :  {
+               case 'imgref' :  {
 	               	$refNumber = array_search($data, $this->_figure_name_array);
 	               	if ($refNumber == null || $refNumber == "")
 	               		$refNumber = "##";
 	               	$str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
 	               	$renderer->doc .= $str; break;
 //	               	 $renderer->_xmlEntities($str);break;
-               }  */
-               case 'caption_open' :  $renderer->doc .= $this->_imgstart($data); break;
-               case 'caption_close' :  {
-               	// -------------------------------------------------------
-               		list($name, $number, $caption) = $data;
-               		$layout = "<div class=\"undercaption\">".$this->getLang('fig').$number.": 
-					<a name=\"".$name."\">".$caption."</a><a href=\" \"><span></span></a>
-					</div></div>";
-               			$renderer->doc .= $layout; break;
                }
    				// -------------------------------------------------------	
    				// data is mostly empty!!!
@@ -137,24 +130,10 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         if($mode == 'latex') {
         	// -----------------------------------------
         	switch ($case) {
-               /* case 'imgref' :  {
+               case 'imgref' :  {
+	               	/* --------------------------------------- */
 	               	$renderer->doc .= "\\ref{".$data."}"; break;
-               } */ 
-               case 'caption_open' :  {
-               		// --------------------------------------
-               		$orientation = "\\centering";
-               		switch($data[1]) {
-               			case 'left'  : $orientation = "\\left";break;
-               			case 'right' : $orientation = "\\right";break;
-               		}
-               		$renderer->doc .= "\\begin{figure}[H!]{".$orientation; break;
-               		// --------------------------------------
-               }
-               case 'caption_close' : {
-               		// -------------------------------------------------------
-               		list($name, $number, $caption) = $data;
-               		$layout = "\\caption{".$caption."}\\label{".$name."}\\end{figure}";
-               		$renderer->doc .= $layout; break;
+	               	/* --------------------------------------- */
                }
 
 			   case 'data' :  $renderer->doc .= trim($data); break;
