@@ -6,12 +6,8 @@
  *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
  * 
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Martin Heinemann <martin.heinemann@tudor.lu>
+ * @author     Martin Heinemann <info@martin.heinemann.net>
  */
- 
-//if(!defined('DOKU_INC')) define('DOKU_INC',realpath(dirname(__FILE__).'/../../').'/');
-//if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
-//require_once(DOKU_PLUGIN.'syntax.php');
  
 if (!defined('DOKU_INC')) die();
 
@@ -45,7 +41,7 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
    
    function getType(){ return 'protected';}
     function getAllowedTypes() { return array('container','substition','protected','disabled','formatting','paragraphs'); }
-    function getPType(){ return 'block';}
+    function getPType(){ return 'normal';}
 
     // must return a number lower than returned by native 'code' mode (200)
     function getSort(){ return 197; }
@@ -67,7 +63,7 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
     * @see render()
     */
     function connectTo($mode) {
-      $this->Lexer->addSpecialPattern('<imgref\s[^\r\n]*?>',$mode, 'plugin_imagereference_imgcaption');
+      $this->Lexer->addSpecialPattern('<imgref\s[^\r\n]*?>',$mode, 'plugin_imagereference_imgref');
     }
  
     function postConnect() {
@@ -77,27 +73,6 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
     function handle($match, $state, $pos, &$handler){
     	
         switch ($state) {
-           case DOKU_LEXER_ENTER : {
-           	$refLabel = trim(substr($match, 11, -1));
-           	$parsedInput = $this->_parseParam($refLabel);
-           	
-           	array_push($this->_figure_name_array, $parsedInput[0]);
-           	
-           	$this->_figure_map[$parsedInput[0]] = "";
-           	
-        	return array('caption_open', $parsedInput);  // image anchor label
-           }
-          case DOKU_LEXER_UNMATCHED : {
-    		$parsed = $this->_parseContent($match);      	
-          	$this->_figure_map[end($this->_figure_name_array)] = $this->_imgend($parsed[0]);
-          	
-        	return array('data', '');
-          }
-           
-          case DOKU_LEXER_EXIT :
-        	return array('caption_close', $this->_figure_map[end($this->_figure_name_array)]);
-          case DOKU_LEXER_MATCHED :
-        	return array('data', "----".$match."------");
           case DOKU_LEXER_SPECIAL : {
                 $ref = substr($match, 8, -1);
                 return array('imgref', $ref);
@@ -108,19 +83,17 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
     }
  
     function render($mode, &$renderer, $indata) {
-	
         list($case, $data) = $indata;
         if($mode == 'xhtml'){
             switch ($case) {
                case 'imgref' :  {
-	               	$refNumber = array_search($data, $this->_figure_name_array);
+                    $_figure_name_array = $renderer->meta['imagereferences'];
+	               	$refNumber = array_search($data, $_figure_name_array);
 	               	if ($refNumber == null || $refNumber == "")
 	               		$refNumber = "##";
 	               	$str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
 	               	$renderer->doc .= $str; break;
-//	               	 $renderer->_xmlEntities($str);break;
                }
-   				// -------------------------------------------------------	
    				// data is mostly empty!!!
 			   case 'data' : $renderer->doc .= $data; break; 
             }
@@ -142,90 +115,9 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
             return true;
         	// -----------------------------------------
         }
-        
-        
         return false;
     }
     
-    
-    
-	function _parseParam($str) {
-      if ( $str == null  || count ( $str ) < 1 ) {
-        return array();
-      }
-      $styles = array();
-	
-      // get the img ref name. Its the first word
-      $parsed = explode(" ", $str, 2);
-      $imgref = $parsed[0];
-      
-      
-      $tokens = preg_split('/\s+/', $parsed[1], 9);                      // limit is defensive
-	      foreach ($tokens as $token) {
-	          // restrict token (class names) characters to prevent any malicious data
-	          if (preg_match('/[^A-Za-z0-9_-]/',$token)) continue;
-	          $styles['class'] = (isset($styles['class']) ? $styles['class'].' ' : '').$token;
-	      }
-		// return imageref name , style
-		// e.G.    image1,left
-      return array($imgref, $styles['class']);
-    }
-    
-    
-    function _imgstart($str) {
-    	// ============================================ //
-    	if (!strlen($str)) return array();
-    	
-		$layout = "<div class=\"imgcaption";
-		//$layout = "<div><div class=\"imgcaption";
-		if ($str[1] != "")
-			$layout = $layout.$str[1];
-		$layout = $layout."\">";
-		
-    	return $layout;
-    	// ============================================ //
-    }
-    
-    
-    /**
-     * 
-     *
-     * @param String $str the image caption
-     * @return array(imagename, image number, image caption)
-     */
-    function _imgend($str) {
-    	// ===================================================== //
-    	$figureName = end($this->_figure_name_array);
-    	// get the position of the figure in the array
-		$refNumber = array_search($figureName, $this->_figure_name_array);
-		
-		return array($figureName, $refNumber, $str);
-		
-		$layout = "<div class=\"undercaption\">".$this->getLang('fig').$refNumber.": 
-		<a name=\"".end($this->_figure_name_array)."\">".$str."</a></div>";
-		
-		//$layout = "<div id=\"undercaption\">Fig. ".$refNumber.": 
-		//<a name=\"".end($this->_figure_name_array)."\">".$str."</a></div></div></div>";
-		
-		return $layout;
-    	// ===================================================== 
-    }
-    /**
-     * divides the image caption and the content between the tags
-     *
-     */
-    
-    function _parseContent($str) {
-    	// ======================================================
-    	if (!strlen($str)) return "";
-    	// parse for '>' 
-    	$parsed = explode(">", $str, 2);
-    	
-    	return $parsed;
-    	// ======================================================
-    }
-    
-   
 }
  
 //Setup VIM: ex: et ts=4 enc=utf-8 :

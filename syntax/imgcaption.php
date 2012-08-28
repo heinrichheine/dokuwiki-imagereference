@@ -96,10 +96,6 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         	return array('caption_close', $this->_figure_map[end($this->_figure_name_array)]);
           case DOKU_LEXER_MATCHED :
         	return array('data', "----".$match."------");
-          case DOKU_LEXER_SPECIAL : {
-                $ref = substr($match, 8, -1);
-                return array('imgref', $ref);
-          }
         }
         
         return array();
@@ -110,28 +106,23 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         list($case, $data) = $indata;
         if($mode == 'xhtml'){
             switch ($case) {
-               /* case 'imgref' :  {
-	               	$refNumber = array_search($data, $this->_figure_name_array);
-	               	if ($refNumber == null || $refNumber == "")
-	               		$refNumber = "##";
-	               	$str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
-	               	$renderer->doc .= $str; break;
-//	               	 $renderer->_xmlEntities($str);break;
-               }  */
                case 'caption_open' :  $renderer->doc .= $this->_imgstart($data); break;
                case 'caption_close' :  {
-               	// -------------------------------------------------------
-               		list($name, $number, $caption) = $data;
-               		$layout = "<div class=\"undercaption\">".$this->getLang('fig').$number.": 
-					<a name=\"".$name."\">".$caption."</a><a href=\" \"><span></span></a>
-					</div></div>";
-               			$renderer->doc .= $layout; break;
+               // -------------------------------------------------------
+               list($name, $number, $caption) = $data;
+               $layout = "<div class=\"undercaption\">".$this->getLang('fig').$number.": 
+                    <a name=\"".$name."\">".$caption."</a><a href=\" \"><span></span></a>
+                    </div></div>";
+               $renderer->doc .= $layout; break;
                }
-   				// -------------------------------------------------------	
-   				// data is mostly empty!!!
-			   case 'data' : $renderer->doc .= $data; break; 
+                // -------------------------------------------------------	
+                // data is mostly empty!!!
+            case 'data' : $renderer->doc .= $data; break; 
             }
-            
+            // store the image refences as metadata to expose them to the
+            // imgref renderer
+            $renderer->meta['imagereferences'] = $this->_figure_name_array;
+
             return true;
         }
         if($mode == 'latex') {
