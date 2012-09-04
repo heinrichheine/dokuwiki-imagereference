@@ -6,7 +6,7 @@
  *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
  * 
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Martin Heinemann <info@martin.heinemann.net>
+ * @author     Martin Heinemann <info@martinheinemann.net>
  */
  
 if (!defined('DOKU_INC')) die();
