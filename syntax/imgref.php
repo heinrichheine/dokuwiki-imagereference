@@ -88,14 +88,19 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
             switch ($case) {
                case 'imgref' :  {
                     $_figure_name_array = $renderer->meta['imagereferences'];
-	               	$refNumber = array_search($data, $_figure_name_array);
-	               	if ($refNumber == null || $refNumber == "")
-	               		$refNumber = "##";
-	               	$str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
-	               	$renderer->doc .= $str; break;
+                    if (is_array($_figure_name_array)) {
+                        $refNumber = array_search($data, $_figure_name_array);
+                        if ($refNumber == null || $refNumber == "")
+                        $refNumber = "##";
+                        $str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
+                        $renderer->doc .= $str; break;
+                    } else {
+                        $warning = "$data<sup style=\"color:#FF0000;\">".$this->getLang('error_imgrefbeforeimgcaption')."</sup>";
+                        $renderer->doc .= $warning;
+                    }
                }
-   				// data is mostly empty!!!
-			   case 'data' : $renderer->doc .= $data; break; 
+                // data is mostly empty!!!
+                case 'data' : $renderer->doc .= $data; break; 
             }
             
             return true;

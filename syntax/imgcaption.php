@@ -102,7 +102,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     }
  
     function render($mode, &$renderer, $indata) {
-	
+
         list($case, $data) = $indata;
         if($mode == 'xhtml'){
             switch ($case) {
@@ -121,8 +121,13 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
             }
             // store the image refences as metadata to expose them to the
             // imgref renderer
-            $renderer->meta['imagereferences'] = $this->_figure_name_array;
-
+            $tmp = $renderer->meta['imagreference'];
+            if (!is_null($tmp) && is_array($tmp)) {
+                $renderer->meta['imagereferences'] = array_merge($tmp, $this->_figure_name_array);
+                
+            } else {
+                $renderer->meta['imagereferences'] = $this->_figure_name_array;
+            }
             return true;
         }
         if($mode == 'latex') {
