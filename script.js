@@ -26,8 +26,6 @@ function checkImages() {
         }
       }
   }
- 
- 
   if(window.toolbar !== undefined){
     toolbar[toolbar.length] = {"type":"format",
                              "title":"Adds an ImageCaption tag",
@@ -45,4 +43,7 @@ function checkImages() {
 }
 
 
-  addInitEvent(function(){checkImages();});
+addInitEvent( function() {
+                checkImages();
+                }
+);
