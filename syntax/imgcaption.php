@@ -25,6 +25,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     
     var $_figure_name_array = array("");
     var $_figure_map = array();
+    var $image_counter_array = array();
     
     
     function getInfo(){
@@ -77,26 +78,34 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         switch ($state) {
             // entering <imgcaption> tag
             case DOKU_LEXER_ENTER : {
-                $refLabel = trim(substr($match, 11, -1));
                 // parse the input for reference-name and orientation
+                $refLabel = trim(substr($match, 11, -1));
                 $parsedInput = $this->_parseParam($refLabel);  // image1,left
-
-                //array_push($this->_figure_name_array, $parsedInput[0]);
-
-                //$this->_figure_map[$parsedInput[0]] = "";
 
               return array('caption_open', $parsedInput);  // image anchor label
              }
             // the content <imgcaption left>content
             case DOKU_LEXER_UNMATCHED : {
-                //$parsed = $this->splitImgcaptionTagFromContent($match);
+                $parsed = $this->splitImgcaptionTagFromContent($match);
                 //$this->_figure_map[end($this->_figure_name_array)] = $this->_imgend($parsed[0]);
-
-              return array('data', '');
+                
+                // save information to metadata to pipe them to the exit pattern
+                $main_image_information = p_get_metadata($ID, "main_image_information",METADATA_RENDER_USING_CACHE);
+                if (is_null($main_image_information) || !is_array($main_image_information)) {
+                    $main_image_information = array();
+                }
+                array_push($main_image_information, $this->_imgend($parsed[0]));
+                $km = array ("main_image_information" => $main_image_information);
+                p_set_metadata($ID, $km, false, true);
+              return array('caption_main_information', $this->_imgend($parsed[0]));
             }
             // the closing end tag
             case DOKU_LEXER_EXIT :
-                return array('caption_close', $this->_figure_map[end($this->_figure_name_array)]);
+                // as we need the main information in this step, we just read them aut of the metadata
+                // assuming that the order of the image parsing in fix
+                $main_image_information = p_get_metadata($ID, "main_image_information",METADATA_RENDER_USING_CACHE);
+                
+                return array('caption_close', $main_image_information);
             // don't know what this is for
             case DOKU_LEXER_MATCHED :
                 return array('data', "----".$match."------");
@@ -123,7 +132,8 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                         $metadata = array("");
                     }
                     array_push($metadata, $imagerefname);
-                    p_set_metadata($ID, $metadata, false, true);
+                    $keyArray = array("imgreflist" => $metadata);
+                    p_set_metadata($ID, $keyArray, false, true);
                 }
             }
         }
@@ -135,6 +145,9 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                case 'caption_open' :  $renderer->doc .= $this->_imgstart($data); break;
                case 'caption_close' :  {
                // -------------------------------------------------------
+               //$indata[0] = "caption_close"
+               //$renderer->doc.= "START".$indata[1][0][2]."ENDE"; break;
+               $data = end($data);
                list($name, $number, $caption) = $data;
                $layout = "<div class=\"undercaption\">".$this->getLang('fig').$number.": 
                     <a name=\"".$name."\">".$caption."</a><a href=\" \"><span></span></a>
@@ -143,7 +156,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                }
                 // -------------------------------------------------------    
                 // data is mostly empty!!!
-            case 'data' : $renderer->doc .= $data; break; 
+            //case 'data' : $renderer->doc .= $data; break; 
             }
             // store the image refences as metadata to expose them to the
             // imgref renderer
@@ -239,7 +252,8 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     function _imgend($str) {
         $figureName = end($this->_figure_name_array);
         // get the position of the figure in the array
-        $refNumber = array_search($figureName, $this->_figure_name_array);
+        $imagereflist = p_get_metadata($ID, "imgreflist", METADATA_RENDER_USING_CACHE);
+        $refNumber = array_search($figureName, $imagereflist);
 
         return array($figureName, $refNumber, $str);
 
