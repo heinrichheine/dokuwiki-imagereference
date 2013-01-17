@@ -27,11 +27,10 @@ span.imgcaption.right {
     margin: 1px;
     float: right;
 }
-span.imgcaption.center {
-    margin: 1px;
+span.imgcaption_centerwrapper {
     display: block;
+    text-align: center;
 }
-
 
 span.imgcaption a img {
     border: 1px solid #ccc;

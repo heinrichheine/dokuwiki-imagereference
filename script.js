@@ -12,6 +12,12 @@ function checkImages() {
                 .attr('href', link)//set link
                 .children().show(); //display button
         }
+        //copy possibly img title when no caption is set
+        var captionparts = $imgcaption.find('span.undercaption').text().split(':', 2);
+        if(!jQuery.trim(captionparts[1])) {
+            var title = $img.attr('title');
+            $imgcaption.find('span.undercaption a').first().before(title);
+        }
 
         //set imgcaption width equal to image
         var width = $img.width();
@@ -28,6 +34,10 @@ function checkImages() {
             else if ($img.hasClass('mediacenter')) {
                 $imgcaption.addClass('center');
             }
+        }
+        //add wrapper to center imgcaption
+        if($imgcaption.hasClass('center')) {
+            $imgcaption.wrap('<span class="imgcaption_centerwrapper"></span>');
         }
     });
 }

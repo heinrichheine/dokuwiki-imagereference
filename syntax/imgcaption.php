@@ -59,9 +59,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      * @see render()
      */
     function connectTo($mode) {
-        /*$this->Lexer->addEntryPattern('<imgcaption\s[^\r\n\|]*?>(?=.*?</imgcaption.*?>)', $mode, 'plugin_imagereference_imgcaption');*/
         $this->Lexer->addEntryPattern('<imgcaption.*?>(?=.*?</imgcaption>)', $mode, 'plugin_imagereference_imgcaption');
-        /*$this->Lexer->addEntryPattern('<imgcaption\s[^\r\n\|]*?\|(?=[^\r\n]*>.*?</imgcaption.*>)', $mode, 'plugin_imagereference_imgcaption');*/
     }
 
     function postConnect() {
