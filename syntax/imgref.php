@@ -25,17 +25,6 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
     var $_figure_name_array = array("");
     var $_figure_map = array();
 
-    function getInfo() {
-        return array(
-            'author' => 'Martin Heinemann',
-            'email'  => 'info@martinheinemann.net',
-            'date'   => '2012-08-21',
-            'name'   => 'imagereference',
-            'desc'   => 'Create image references like latex is doing with figures',
-            'url'    => 'http://wiki.splitbrain.org/wiki:plugins',
-        );
-    }
-
     function getType() {
         return 'protected';
     }
@@ -80,10 +69,8 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
 
         switch($state) {
             case DOKU_LEXER_SPECIAL :
-                {
                 $ref = substr($match, 8, -1);
                 return array('imgref', $ref);
-                }
         }
 
         return array();
@@ -99,13 +86,15 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
                         $refNumber = array_search($data, $_figure_name_array);
                         if($refNumber == null || $refNumber == "")
                             $refNumber = "##";
-                        $str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
+                        $str = "<a href=\"#".$data."\">".$this->getLang('figure')." ".$refNumber." </a>";
                         $renderer->doc .= $str;
-                        break;
+
                     } else {
                         $warning = "$data<sup style=\"color:#FF0000;\">".$this->getLang('error_imgrefbeforeimgcaption')."</sup>";
                         $renderer->doc .= $warning;
                     }
+                    break;
+
                 // data is mostly empty!!!
                 case 'data' :
                     $renderer->doc .= $data;
@@ -115,13 +104,10 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
             return true;
         }
         if($mode == 'latex') {
-            // -----------------------------------------
             switch($case) {
                 case 'imgref' :
-                    /* --------------------------------------- */
                     $renderer->doc .= "\\ref{".$data."}";
                     break;
-                    /* --------------------------------------- */
 
                 case 'data' :
                     $renderer->doc .= trim($data);
@@ -129,7 +115,6 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
             }
 
             return true;
-            // -----------------------------------------
         }
         return false;
     }
@@ -137,4 +122,3 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
 }
 
 //Setup VIM: ex: et ts=4 enc=utf-8 :
-?>
