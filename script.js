@@ -1,48 +1,68 @@
 function checkImages() {
 
-    var divs=document.getElementsByTagName("DIV");
+    jQuery('span.imgcaption').each(function () {
+        var $imgcaption = jQuery(this);
+        var $amedia = $imgcaption.find('a.media');
+        var $img = $imgcaption.find('img');
 
-    for (var i=0;i<divs.length;i++) {
-        if (divs[i].className == "imgcaption" || divs[i].className == "imgcaptionleft" || divs[i].className == "imgcaptionright") {
-
-            var children = divs[i].getElementsByTagName("IMG");
-            // check if there is a link encapsulating the image        
-            var tmpImg = divs[i].childNodes[0].childNodes[0];
-            if (tmpImg === null) {
-                tmpImg = divs[i].childNodes[0];
-            }
-            else {
-                // we have link and we can build the link image
-                var innerElements = divs[i];
-                var iLink = innerElements.childNodes[1].childNodes[2];
-                var iSpan = iLink.childNodes[0];
-                // set the href of the link to the image link
-                iLink.href = innerElements.childNodes[0].href;
-                // show the link image
-                iSpan.style.display="inline";
-            }
-            //var tmpLink = divs[i].childNodes[0];
-            divs[i].style.width=(tmpImg.width + 8)+"px";
+        //copy img url to magnify button
+        if ($amedia[0]) {
+            var link = $amedia.attr('href');
+            $imgcaption.find('span.undercaption a').last()
+                .attr('href', link)//set link
+                .children().show(); //display button
         }
-      }
-  }
- 
- 
-  if(window.toolbar !== undefined){
-    toolbar[toolbar.length] = {"type":"format",
-                             "title":"Adds an ImageCaption tag",
-                             "icon":"../../plugins/imagereference/button.png",
-                             "key":"",
-                             "open":"<imgcaption image1|>",
-                             "close":"</imgcaption>"};
-     toolbar[toolbar.length] = {"type":"format",
-                             "title":"Adds an ImageReference tag",
-                             "icon":"../../plugins/imagereference/refbutton.png",
-                             "key":"",
-                             "open":"<imgref ",
-                             "sample":"image1",
-                             "close":">"};
+        //copy possibly img title when no caption is set
+        var captionparts = $imgcaption.find('span.undercaption').text().split(':', 2);
+        if(!jQuery.trim(captionparts[1])) {
+            var title = $img.attr('title');
+            $imgcaption.find('span.undercaption a').first().before(title);
+        }
+
+        //set imgcaption width equal to image
+        var width = $img.width();
+        $imgcaption.width((width + 8) + "px");
+
+        //apply alignment of image to imgcaption
+        if (!($imgcaption.hasClass('left') || $imgcaption.hasClass('right') || $imgcaption.hasClass('center'))) {
+            if ($img.hasClass('medialeft')) {
+                $imgcaption.addClass('left');
+            }
+            else if ($img.hasClass('mediaright')) {
+                $imgcaption.addClass('right');
+            }
+            else if ($img.hasClass('mediacenter')) {
+                $imgcaption.addClass('center');
+            }
+        }
+        //add wrapper to center imgcaption
+        if($imgcaption.hasClass('center')) {
+            $imgcaption.wrap('<span class="imgcaption_centerwrapper"></span>');
+        }
+    });
 }
 
 
-  addInitEvent(function(){checkImages();});
+if (window.toolbar !== undefined) {
+    toolbar[toolbar.length] = {
+        "type": "format",
+        "title": "Adds an ImageCaption tag",
+        "icon": "../../plugins/imagereference/button.png",
+        "key": "",
+        "open": "<imgcaption image1|>",
+        "close": "</imgcaption>"
+    };
+    toolbar[toolbar.length] = {
+        "type": "format",
+        "title": "Adds an ImageReference tag",
+        "icon": "../../plugins/imagereference/refbutton.png",
+        "key": "",
+        "open": "<imgref ",
+        "sample": "image1",
+        "close": ">"
+    };
+}
+
+jQuery(function () {
+    checkImages();
+});

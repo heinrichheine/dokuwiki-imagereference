@@ -6,7 +6,7 @@
  */
 
 
-div.imgcaption {
+span.imgcaption {
     border: 1px solid #ccc;
     padding: 3px !important;
     background-color: #f9f9f9;  
@@ -16,49 +16,30 @@ div.imgcaption {
     overflow: hidden;
     margin: 1px auto;
     float: none;
+    display: inline-block;
 }
 
-div.imgcaptionleft {
-    border: 1px solid #ccc;
-    padding: 3px !important;
-    background-color: #f9f9f9;
-    font-size: 94%;
-    text-align: center;
-    width: auto;
-    overflow: hidden;
+span.imgcaption.left {
     margin: 1px;
     float: left;
 }
-
-div.imgcaptionright {
-    border: 1px solid #ccc;
-    padding: 3px !important;
-    background-color: #f9f9f9;
-    font-size: 94%;
-    text-align: center;
-    width: auto;
-    overflow: hidden;
+span.imgcaption.right {
     margin: 1px;
     float: right;
 }
-
-
-div.imgcaption a img {
-    border: 1px solid #ccc;
-    background-color:#FFFFFF;
+span.imgcaption_centerwrapper {
+    display: block;
+    text-align: center;
 }
-div.imgcaptionleft a img {
-    border: 1px solid #ccc;
-    background-color:#FFFFFF;
-}
-div.imgcaptionright a img {
+
+span.imgcaption a img {
     border: 1px solid #ccc;
     background-color:#FFFFFF;
 }
 
 div.dokuwiki .undercaption {
 	 font-size: 95%;
-    
+     display: block;
 }
 
 div.dokuwiki .undercaption a:hover {
@@ -74,13 +55,12 @@ div.dokuwiki .undercaption span {
     display:none;
 }
 
-
-div.imgcaption img.mediaright {
+div.dokuwiki span.imgcaption img.mediaright {
   float: none;
   margin: 0 0 0.5em 0;
 }
 
-div.imgcaption img.medialeft {
+div.dokuwiki span.imgcaption img.medialeft {
   float: none;
   margin: 0 0 0.5em 0;
 }
