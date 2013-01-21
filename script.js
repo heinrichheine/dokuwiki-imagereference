@@ -14,14 +14,12 @@ function checkImages() {
         }
         //copy possibly img title when no caption is set
         var captionparts = $imgcaption.find('span.undercaption').text().split(':', 2);
-        if(!jQuery.trim(captionparts[1])) {
+        if (!jQuery.trim(captionparts[1])) {
             var title = $img.attr('title');
-            $imgcaption.find('span.undercaption a').first().before(title);
+            if (title) {
+                $imgcaption.find('span.undercaption a').first().before(': ' + title);
+            }
         }
-
-        //set imgcaption width equal to image
-        var width = $img.width();
-        $imgcaption.width((width + 8) + "px");
 
         //apply alignment of image to imgcaption
         if (!($imgcaption.hasClass('left') || $imgcaption.hasClass('right') || $imgcaption.hasClass('center'))) {
@@ -36,7 +34,7 @@ function checkImages() {
             }
         }
         //add wrapper to center imgcaption
-        if($imgcaption.hasClass('center')) {
+        if ($imgcaption.hasClass('center')) {
             $imgcaption.wrap('<span class="imgcaption_centerwrapper"></span>');
         }
     });
@@ -65,4 +63,15 @@ if (window.toolbar !== undefined) {
 
 jQuery(function () {
     checkImages();
+});
+
+// Chrome returns 0 for jQuery().width() on not scaled images, when not loaded yet before js runs
+// TODO: do this in css??
+jQuery(window).load(function () {
+    jQuery('span.imgcaption').each(function () {
+        //set imgcaption width equal to image
+        var $imgcaption = jQuery(this);
+        var width = $imgcaption.find('img').width();
+        $imgcaption.width((width + 8) + "px");
+    });
 });

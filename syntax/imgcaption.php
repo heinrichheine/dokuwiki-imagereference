@@ -7,6 +7,7 @@
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Martin Heinemann <martinheinemann@tudor.lu>
+ * @author     Gerrit Uitslag <klapinklapin@gmail.com>
  */
 
 if(!defined('DOKU_INC')) die();
@@ -22,30 +23,42 @@ require_once DOKU_PLUGIN.'syntax.php';
  */
 class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
 
-    var $_figure_name_array = array("");
-    var $_figure_map = array();
+    /* @var array $_figcaptionparam */
+    var $_figcaptionparam = array();
 
+    /**
+     * @return string Syntax type
+     */
     function getType() {
-        return 'protected';
+        return 'formatting';
     }
-
-    function getAllowedTypes() {
-        return array('container', 'substition', 'protected', 'disabled', 'formatting', 'paragraphs');
-    }
-
+    /**
+     * @return string Paragraph type
+     */
     function getPType() {
         return 'normal';
     }
-
-    // must return a number lower than returned by native 'code' mode (200)
+    /**
+     * @return int Sort order
+     */
     function getSort() {
         return 196;
     }
 
-    // override default accepts() method to allow nesting 
-    // - ie, to get the plugin accepts its own entry syntax
+    /**
+     * Specify modes allowed in the imgcaption
+     * Using getAllowedTypes() includes too much modes.
+     *
+     * @param string $mode Parser mode
+     * @return bool true if $mode is accepted
+     */
     function accepts($mode) {
-        if($mode == substr(get_class($this), 7)) return true;
+        $allowedsinglemodes = array(
+            'table', 'media', //allowed content
+            'internallink', 'externallink', 'linebreak', //clickable img allowed
+            'emaillink', 'windowssharelink', 'filelink'
+        );
+        if(in_array($mode, $allowedsinglemodes)) return true;
 
         return parent::accepts($mode);
     }
@@ -53,10 +66,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     /**
      * Connect lookup pattern to lexer.
      *
-     * @param $aMode String The desired rendermode.
-     * @return none
-     * @public
-     * @see render()
+     * @param string $mode Parser mode
      */
     function connectTo($mode) {
         $this->Lexer->addEntryPattern('<imgcaption.*?>(?=.*?</imgcaption>)', $mode, 'plugin_imagereference_imgcaption');
@@ -66,120 +76,148 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         $this->Lexer->addExitPattern('</imgcaption>', 'plugin_imagereference_imgcaption');
     }
 
+    /**
+     * Handle matches of the imgcaption syntax
+     *
+     * @param string          $match The match of the syntax
+     * @param int             $state The state of the handler
+     * @param int             $pos The position in the document
+     * @param Doku_Handler    $handler The handler
+     * @return array Data for the renderer
+     */
     function handle($match, $state, $pos, &$handler) {
 
         switch($state) {
             case DOKU_LEXER_ENTER :
-                $refParam    = trim(substr($match, 11, -1));
-                list($param, $caption) = $this->_parseParam($refParam);
+                $rawparam = trim(substr($match, 11, -1));
+                $param    = $this->_parseParam($rawparam);
 
-                array_push($this->_figure_name_array, $param['imgref']);
+                //store parameters for closing tag
+                $this->_figcaptionparam = $param;
 
-                // get the position of the figure in the array
-                $refNumber = count($this->_figure_name_array)-1;
-
-                $this->_figure_map[$param['imgref']] = array(
-                    'imgref' => $param['imgref'],
-                    'caption' => $caption,
-                    'refnumber' => $refNumber
-                );
-
-                return array('caption_open', $param); // image anchor label
+                return array('caption_open', $param);
 
             case DOKU_LEXER_UNMATCHED :
                 // drop unmatched text inside imgcaption tag
                 return array('data', '');
+
                 // when normal text it's usefull, then use next lines instead
                 //$handler->_addCall('cdata', array($match), $pos);
                 //return false;
 
             case DOKU_LEXER_EXIT :
-                return array('caption_close', $this->_figure_map[end($this->_figure_name_array)]);
+                //load parameters
+                $param = $this->_figcaptionparam;
+                return array('caption_close', $param);
         }
 
         return array();
     }
 
+    /**
+     * Render xhtml output, latex output or metadata
+     *
+     * @param string         $mode      Renderer mode (supported modes: xhtml, latex and metadata)
+     * @param Doku_Renderer  $renderer  The renderer
+     * @param array          $indata    The data from the handler function
+     * @return bool If rendering was successful.
+     */
     function render($mode, &$renderer, $indata) {
-
+        global $ID;
         list($case, $data) = $indata;
-        if($mode == 'xhtml') {
-            switch($case) {
-                case 'caption_open' :
-                    $renderer->doc .= $this->_imgstart($data);
-                    break;
 
-                case 'caption_close' :
-                    $renderer->doc .= $this->_imgend($data);
-                    break;
+        switch($mode) {
+            case 'xhtml' :
+                /** @var Doku_Renderer_xhtml $renderer */
+                switch($case) {
+                    case 'caption_open' :
+                        $renderer->doc .= $this->_imgstart($data);
+                        return true;
 
-                // $data is empty string
-                case 'data' :
-                    $renderer->doc .= $data;
-                    break;
-            }
-            // store the image refences as metadata to expose them to the
-            // imgref renderer
-            $tmp = $renderer->meta['imagereferences'];
-            if(!is_null($tmp) && is_array($tmp)) {
-                $renderer->meta['imagereferences'] = array_merge($tmp, $this->_figure_name_array);
-            } else {
-                $renderer->meta['imagereferences'] = $this->_figure_name_array;
-            }
-            return true;
-        }
-        if($mode == 'latex') {
-            switch($case) {
-                case 'caption_open' :
-                    $orientation = "\\centering";
-                    switch($data['classes']) {
-                        case 'left'  :
+                    // $data is empty string
+                    case 'data' :
+                        $renderer->doc .= $data;
+                        return true;
+
+                    case 'caption_close' :
+                        //determine referencenumber
+                        $imgrefs = p_get_metadata($ID, 'imagereferences');
+                        $data['refnumber'] = array_search($data['imgrefname'], $imgrefs);
+
+                        $renderer->doc .= $this->_imgend($data);
+                        return true;
+                }
+                break;
+
+            case 'metadata' :
+                /** @var Doku_Renderer_metadata $renderer */
+                switch($case) {
+                    case 'caption_open' :
+                        // store the image refences as metadata to expose them to the imgref and undercaption renderer
+                        if(!isset($renderer->meta['imagereferences'])) {
+                            //create array and add index zero entry, so stored imgrefnames start counting on one.
+                            $renderer->meta['imagereferences'][] = '';
+                        }
+                        $renderer->meta['imagereferences'][] = $data['imgrefname'];
+
+                        //abstract
+                        if($renderer->capture && $data['caption']) $renderer->doc .= '<';
+                        return true;
+
+                    case 'caption_close' :
+                        //abstract
+                        if($renderer->capture && $data['caption']) $renderer->doc .= hsc($data['caption']).'>';
+                        return true;
+                }
+                break;
+
+            case 'latex' :
+                switch($case) {
+                    case 'caption_open' :
+                        $orientation = "\\centering";
+                        if(strpos($data['classes'], 'left') !== false) {
                             $orientation = "\\left";
-                            break;
-                        case 'right' :
+                        } elseif(strpos($data['classes'], 'right') !== false) {
                             $orientation = "\\right";
-                            break;
-                    }
-                    $renderer->doc .= "\\begin{figure}[H!]{".$orientation;
-                    break;
+                        }
+                        $renderer->doc .= "\\begin{figure}[H!]{".$orientation;
+                        return true;
 
-                case 'caption_close' :
-                    $layout = "\\caption{".$data['caption']."}\\label{".$data['imgref']."}\\end{figure}";
-                    $renderer->doc .= $layout;
-                    break;
+                    case 'data' :
+                        $renderer->doc .= trim($data);
+                        return true;
 
-                case 'data' :
-                    $renderer->doc .= trim($data);
-                    break;
-            }
-
-            return true;
+                    case 'caption_close' :
+                        $renderer->doc .= "\\caption{".$data['caption']."}\\label{".$data['imgref']."}\\end{figure}";
+                        return true;
+                }
+                break;
         }
-
         return false;
     }
 
     /**
-     * Parse parameters part of <imgcaption imgref class1 class2|Caption>
+     * Parse parameters part of <imgcaption imgref class1 class2|Caption of image>
      *
-     * @param string $str space separated parameters e.g."imgref class1 class2"
-     * @return array(string imgref, string classes)
+     * @param string $str space separated parameters e.g."imgref class1 class2|Caption of image"
+     * @return array(string imgrefname, string classes, string caption)
      */
     function _parseParam($str) {
         if($str == null || count($str) < 1) {
             return array();
         }
-        $classes = '';
 
         // get caption, second part
-        $parsed = explode("|", $str, 2);
-        $caption = $parsed[1];
+        $parsed  = explode("|", $str, 2);
+        $caption = '';
+        if(isset($parsed[1])) $caption = trim($parsed[1]);
 
         // get the img ref name. Its the first word
-        $parsed = explode(" ", $parsed[0], 2);
-        $imgref = $parsed[0];
+        $parsed     = explode(" ", $parsed[0], 2);
+        $imgrefname = $parsed[0];
 
-        $tokens = preg_split('/\s+/', $parsed[1], 9); // limit is defensive
+        $tokens  = preg_split('/\s+/', $parsed[1], 9); // limit is defensive
+        $classes = '';
         foreach($tokens as $token) {
             // restrict token (class names) characters to prevent any malicious data
             if(preg_match('/[^A-Za-z0-9_-]/', $token)) continue;
@@ -187,21 +225,18 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
             if($token == '') continue;
             $classes .= ' '.$token;
         }
-        // return imageref name , style
-        // e.G.    image1,left
+
         return array(
-            array(
-                'imgref'  => $imgref,
-                'classes' => $classes
-            ),
-            $caption,
+            'imgrefname'  => $imgrefname,
+            'classes'     => $classes,
+            'caption'     => $caption
         );
     }
 
     /**
      * Create html of opening of caption wrapper
      *
-     * @param array $data(imgref, classes)
+     * @param array $data(imgref, classes, ..)
      * @return string html start of caption wrapper
      */
     function _imgstart($data) {
@@ -218,13 +253,13 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     /**
      * Create html of closing of caption wrapper
      *
-     * @param array($name, $number, $caption) caption data
+     * @param array $data(imgrefname, refnumber, caption, ..) Caption data
      * @return string html caption wrapper
      */
     function _imgend($data) {
         return '<span class="undercaption">'
-                    .$this->getLang('fig').' '.$data['refnumber'].':
-                    <a name="'.cleanID($data['imgref']).'">'.hsc($data['caption']).'</a>
+                    .$this->getLang('fig').' '.$data['refnumber'].($data['caption'] ? ': ' : '')
+                    .'<a name="'.cleanID($data['imgrefname']).'">'.hsc($data['caption']).'</a>
                     <a href=" "><span></span></a>
                 </span></span>';
     }

@@ -47,8 +47,7 @@ div.dokuwiki .undercaption a:hover {
 }
 
 div.dokuwiki .undercaption span {
-    background-image:url(./magnify-clip.png);
-    background-repeat:no-repeat;
+    background: url(./magnify-clip.png) no-repeat;
   
     margin:2px;
     padding-left:15px; 

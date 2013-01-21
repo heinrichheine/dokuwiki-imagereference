@@ -1,115 +1,103 @@
 <?php
-/**
- * Plugin imagereference
- *
- * Syntax: <imgref linkname> - creates a figure link to an image
- *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
- *
- * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Martin Heinemann <info@martinheinemann.net>
- */
+    /**
+     * Plugin imagereference
+     *
+     * Syntax: <imgref linkname> - creates a figure link to an image
+     *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
+     *
+     * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
+     * @author     Martin Heinemann <info@martinheinemann.net>
+     * @author     Gerrit Uitslag <klapinklapin@gmail.com>
+     */
 
-if(!defined('DOKU_INC')) die();
+    if(!defined('DOKU_INC')) die();
 
-if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
+    if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
+    if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
+    if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
 
-require_once DOKU_PLUGIN.'syntax.php';
-/**
- * All DokuWiki plugins to extend the parser/rendering mechanism
- * need to inherit from this class
- */
+    require_once DOKU_PLUGIN.'syntax.php';
+    /**
+     * All DokuWiki plugins to extend the parser/rendering mechanism
+     * need to inherit from this class
+     */
 class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
 
-    var $_figure_name_array = array("");
-    var $_figure_map = array();
-
+    /**
+     * @return string Syntax type
+     */
     function getType() {
-        return 'protected';
+        return 'substition';
     }
-
-    function getAllowedTypes() {
-        return array('container', 'substition', 'protected', 'disabled', 'formatting', 'paragraphs');
-    }
-
+    /**
+     * @return string Paragraph type
+     */
     function getPType() {
         return 'normal';
     }
-
-    // must return a number lower than returned by native 'code' mode (200)
+    /**
+     * @return int Sort order
+     */
     function getSort() {
         return 197;
-    }
-
-    // override default accepts() method to allow nesting 
-    // - ie, to get the plugin accepts its own entry syntax
-    function accepts($mode) {
-        if($mode == substr(get_class($this), 7)) return true;
-
-        return parent::accepts($mode);
     }
 
     /**
      * Connect lookup pattern to lexer.
      *
-     * @param $aMode String The desired rendermode.
-     * @return none
-     * @public
-     * @see render()
+     * @param string $mode Parser mode
      */
     function connectTo($mode) {
-        $this->Lexer->addSpecialPattern('<imgref\s[^\r\n]*?>', $mode, 'plugin_imagereference_imgref');
+        $this->Lexer->addSpecialPattern('<imgref.*?>', $mode, 'plugin_imagereference_imgref');
     }
-
-    function postConnect() {
-    }
-
+    /**
+     * Handle matches of the imgref syntax
+     *
+     * @param string $match The match of the syntax
+     * @param int    $state The state of the handler
+     * @param int    $pos The position in the document
+     * @param Doku_Handler    $handler The handler
+     * @return array Data for the renderer
+     */
     function handle($match, $state, $pos, &$handler) {
-
-        switch($state) {
-            case DOKU_LEXER_SPECIAL :
-                $ref = substr($match, 8, -1);
-                return array('imgref', $ref);
-        }
-
-        return array();
-    }
-
-    function render($mode, &$renderer, $indata) {
-        list($case, $data) = $indata;
-        if($mode == 'xhtml') {
-            switch($case) {
-                case 'imgref' :
-                    $_figure_name_array = $renderer->meta['imagereferences'];
-                    if(is_array($_figure_name_array)) {
-                        $refNumber = array_search($data, $_figure_name_array);
-                        if($refNumber == null || $refNumber == "")
-                            $refNumber = "##";
-                        $str = "<a href=\"#".cleanID($data)."\">".$this->getLang('figure')." ".$refNumber." </a>";
-                        $renderer->doc .= $str;
-
-                    } else {
-                        $warning = cleanID($data)."<sup style=\"color:#FF0000;\">".$this->getLang('error_imgrefbeforeimgcaption')."</sup>";
-                        $renderer->doc .= $warning;
-                    }
-                    break;
-            }
-
-            return true;
-        }
-        if($mode == 'latex') {
-            switch($case) {
-                case 'imgref' :
-                    $renderer->doc .= "\\ref{".$data."}";
-                    break;
-            }
-
-            return true;
+        $ref = trim(substr($match, 8, -1));
+        if($ref) {
+            return array('imgrefname' => $ref);
         }
         return false;
     }
+    /**
+     * Render xhtml output or metadata
+     *
+     * @param string         $mode      Renderer mode (supported modes: xhtml and metadata)
+     * @param Doku_Renderer  $renderer  The renderer
+     * @param array          $data      The data from the handler function
+     * @return bool If rendering was successful.
+     */
+    function render($mode, &$renderer, $data) {
+        global $ID;
+        if($data === false) return false;
 
+        switch($mode) {
+            case 'xhtml' :
+                /** @var Doku_Renderer_xhtml $renderer */
+
+                //determine referencenumber
+                $imgrefs   = p_get_metadata($ID, 'imagereferences');
+                $refNumber = array_search($data['imgrefname'], $imgrefs);
+
+                if(!$refNumber) {
+                    $refNumber = "##";
+                }
+
+                $renderer->doc .= '<a href="#'.cleanID($data['imgrefname']).'">'.$this->getLang('figure').' '.$refNumber.'</a>';
+                return true;
+
+            case 'latex' :
+                $renderer->doc .= "\\ref{".$data['imgrefname']."}";
+                return true;
+        }
+        return false;
+    }
 }
-
 //Setup VIM: ex: et ts=4 enc=utf-8 :
