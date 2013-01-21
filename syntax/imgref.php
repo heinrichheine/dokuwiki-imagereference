@@ -4,6 +4,8 @@
      *
      * Syntax: <imgref linkname> - creates a figure link to an image
      *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
+     *         <tabref linkname> - creates a table link to a table
+     *         <tabcaption linkname <orientation> | Image caption> Image/Table</tabcaption>
      *
      * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
      * @author     Martin Heinemann <info@martinheinemann.net>
@@ -49,6 +51,8 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
      */
     function connectTo($mode) {
         $this->Lexer->addSpecialPattern('<imgref.*?>', $mode, 'plugin_imagereference_imgref');
+        $this->Lexer->addSpecialPattern('<tabref.*?>', $mode, 'plugin_imagereference_imgref');
+
     }
     /**
      * Handle matches of the imgref syntax
@@ -60,9 +64,13 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
      * @return array Data for the renderer
      */
     function handle($match, $state, $pos, &$handler) {
+        $reftype = substr($match, 1, 3);
         $ref = trim(substr($match, 8, -1));
         if($ref) {
-            return array('imgrefname' => $ref);
+            return array(
+                'caprefname' => $ref,
+                'type'    => $reftype
+            );
         }
         return false;
     }
@@ -83,18 +91,18 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
                 /** @var Doku_Renderer_xhtml $renderer */
 
                 //determine referencenumber
-                $imgrefs   = p_get_metadata($ID, 'imagereferences');
-                $refNumber = array_search($data['imgrefname'], $imgrefs);
+                $caprefs   = p_get_metadata($ID, 'captionreferences '.$data['type']);
+                $refNumber = array_search($data['caprefname'], $caprefs);
 
                 if(!$refNumber) {
                     $refNumber = "##";
                 }
 
-                $renderer->doc .= '<a href="#'.cleanID($data['imgrefname']).'">'.$this->getLang('figure').' '.$refNumber.'</a>';
+                $renderer->doc .= '<a href="#'.$data['type'].'_'.cleanID($data['caprefname']).'">'.$this->getLang($data['type'].'full').' '.$refNumber.'</a>';
                 return true;
 
             case 'latex' :
-                $renderer->doc .= "\\ref{".$data['imgrefname']."}";
+                $renderer->doc .= "\\ref{".$data['caprefname']."}";
                 return true;
         }
         return false;

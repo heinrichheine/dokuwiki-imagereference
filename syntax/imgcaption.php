@@ -4,6 +4,8 @@
  *
  * Syntax: <imgref linkname> - creates a figure link to an image
  *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
+ *         <tabref linkname> - creates a table link to a table
+ *         <tabcaption linkname <orientation> | Image caption> Image/Table</tabcaption>
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Martin Heinemann <martinheinemann@tudor.lu>
@@ -23,8 +25,8 @@ require_once DOKU_PLUGIN.'syntax.php';
  */
 class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
 
-    /* @var array $_figcaptionparam */
-    var $_figcaptionparam = array();
+    /* @var array $_captionparam */
+    var $_captionparam = array();
 
     /**
      * @return string Syntax type
@@ -32,12 +34,14 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     function getType() {
         return 'formatting';
     }
+
     /**
      * @return string Paragraph type
      */
     function getPType() {
         return 'normal';
     }
+
     /**
      * @return int Sort order
      */
@@ -46,7 +50,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     * Specify modes allowed in the imgcaption
+     * Specify modes allowed in the imgcaption/tabcaption
      * Using getAllowedTypes() includes too much modes.
      *
      * @param string $mode Parser mode
@@ -70,14 +74,17 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      */
     function connectTo($mode) {
         $this->Lexer->addEntryPattern('<imgcaption.*?>(?=.*?</imgcaption>)', $mode, 'plugin_imagereference_imgcaption');
+        $this->Lexer->addEntryPattern('<tabcaption.*?>(?=.*?</tabcaption>)', $mode, 'plugin_imagereference_imgcaption');
+
     }
 
     function postConnect() {
+        $this->Lexer->addExitPattern('</tabcaption>', 'plugin_imagereference_imgcaption');
         $this->Lexer->addExitPattern('</imgcaption>', 'plugin_imagereference_imgcaption');
     }
 
     /**
-     * Handle matches of the imgcaption syntax
+     * Handle matches of the imgcaption/tabcaption syntax
      *
      * @param string          $match The match of the syntax
      * @param int             $state The state of the handler
@@ -89,25 +96,25 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
 
         switch($state) {
             case DOKU_LEXER_ENTER :
-                $rawparam = trim(substr($match, 11, -1));
+                $rawparam = trim(substr($match, 1, -1));
                 $param    = $this->_parseParam($rawparam);
 
                 //store parameters for closing tag
-                $this->_figcaptionparam = $param;
+                $this->_captionparam = $param;
 
                 return array('caption_open', $param);
 
             case DOKU_LEXER_UNMATCHED :
-                // drop unmatched text inside imgcaption tag
+                // drop unmatched text inside imgcaption/tabcaption tag
                 return array('data', '');
 
-                // when normal text it's usefull, then use next lines instead
-                //$handler->_addCall('cdata', array($match), $pos);
-                //return false;
+            // when normal text it's usefull, then use next lines instead
+            //$handler->_addCall('cdata', array($match), $pos);
+            //return false;
 
             case DOKU_LEXER_EXIT :
                 //load parameters
-                $param = $this->_figcaptionparam;
+                $param = $this->_captionparam;
                 return array('caption_close', $param);
         }
 
@@ -131,7 +138,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                 /** @var Doku_Renderer_xhtml $renderer */
                 switch($case) {
                     case 'caption_open' :
-                        $renderer->doc .= $this->_imgstart($data);
+                        $renderer->doc .= $this->_capstart($data);
                         return true;
 
                     // $data is empty string
@@ -141,10 +148,10 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
 
                     case 'caption_close' :
                         //determine referencenumber
-                        $imgrefs = p_get_metadata($ID, 'imagereferences');
-                        $data['refnumber'] = array_search($data['imgrefname'], $imgrefs);
+                        $caprefs           = p_get_metadata($ID, 'captionreferences '.$data['type']);
+                        $data['refnumber'] = array_search($data['caprefname'], $caprefs);
 
-                        $renderer->doc .= $this->_imgend($data);
+                        $renderer->doc .= $this->_capend($data);
                         return true;
                 }
                 break;
@@ -153,12 +160,13 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                 /** @var Doku_Renderer_metadata $renderer */
                 switch($case) {
                     case 'caption_open' :
-                        // store the image refences as metadata to expose them to the imgref and undercaption renderer
-                        if(!isset($renderer->meta['imagereferences'])) {
-                            //create array and add index zero entry, so stored imgrefnames start counting on one.
-                            $renderer->meta['imagereferences'][] = '';
+                        // store the image refences as metadata to expose them to the imgref/tabref and undercaption renderer
+                        //create array and add index zero entry, so stored caprefnames start counting on one.
+                        $type = $data['type'];
+                        if(!isset($renderer->meta['captionreferences'][$type])) {
+                            $renderer->meta['captionreferences'][$type][] = '';
                         }
-                        $renderer->meta['imagereferences'][] = $data['imgrefname'];
+                        $renderer->meta['captionreferences'][$type][] = $data['caprefname'];
 
                         //abstract
                         if($renderer->capture && $data['caption']) $renderer->doc .= '<';
@@ -172,6 +180,11 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                 break;
 
             case 'latex' :
+                if($data['type'] == 'img') {
+                    $floattype = 'figure';
+                } else {
+                    $floattype = 'table';
+                }
                 switch($case) {
                     case 'caption_open' :
                         $orientation = "\\centering";
@@ -180,7 +193,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                         } elseif(strpos($data['classes'], 'right') !== false) {
                             $orientation = "\\right";
                         }
-                        $renderer->doc .= "\\begin{figure}[H!]{".$orientation;
+                        $renderer->doc .= "\\begin{".$floattype."}[H!]{".$orientation;
                         return true;
 
                     case 'data' :
@@ -188,7 +201,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                         return true;
 
                     case 'caption_close' :
-                        $renderer->doc .= "\\caption{".$data['caption']."}\\label{".$data['imgref']."}\\end{figure}";
+                        $renderer->doc .= "\\caption{".$data['caption']."}\\label{".$data['caprefname']."}\\end{".$floattype."}";
                         return true;
                 }
                 break;
@@ -213,10 +226,11 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         if(isset($parsed[1])) $caption = trim($parsed[1]);
 
         // get the img ref name. Its the first word
-        $parsed     = explode(" ", $parsed[0], 2);
-        $imgrefname = $parsed[0];
+        $parsed     = explode(" ", $parsed[0], 3);
+        $captiontype = substr($parsed[0], 0, 3);
+        $caprefname = $parsed[1];
 
-        $tokens  = preg_split('/\s+/', $parsed[1], 9); // limit is defensive
+        $tokens  = preg_split('/\s+/', $parsed[2], 9); // limit is defensive
         $classes = '';
         foreach($tokens as $token) {
             // restrict token (class names) characters to prevent any malicious data
@@ -227,19 +241,20 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         }
 
         return array(
-            'imgrefname'  => $imgrefname,
+            'caprefname'  => $caprefname,
             'classes'     => $classes,
-            'caption'     => $caption
+            'caption'     => $caption,
+            'type' => $captiontype
         );
     }
 
     /**
      * Create html of opening of caption wrapper
      *
-     * @param array $data(imgref, classes, ..)
+     * @param array $data(caprefname, classes, ..)
      * @return string html start of caption wrapper
      */
-    function _imgstart($data) {
+    function _capstart($data) {
 
         $layout = '<span class="imgcaption';
         if($data['classes'] != "") {
@@ -253,13 +268,13 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     /**
      * Create html of closing of caption wrapper
      *
-     * @param array $data(imgrefname, refnumber, caption, ..) Caption data
+     * @param array $data(caprefname, refnumber, caption, ..) Caption data
      * @return string html caption wrapper
      */
-    function _imgend($data) {
+    function _capend($data) {
         return '<span class="undercaption">'
-                    .$this->getLang('fig').' '.$data['refnumber'].($data['caption'] ? ': ' : '')
-                    .'<a name="'.cleanID($data['imgrefname']).'">'.hsc($data['caption']).'</a>
+                    .$this->getLang($data['type'].'short').' '.$data['refnumber'].($data['caption'] ? ': ' : '')
+                    .'<a name="'.$data['type'].'_'.cleanID($data['caprefname']).'">'.hsc($data['caption']).'</a>
                     <a href=" "><span></span></a>
                 </span></span>';
     }
