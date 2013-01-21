@@ -68,7 +68,7 @@ jQuery(function () {
 // Chrome returns 0 for jQuery().width() on not scaled images, when not loaded yet before js runs
 // TODO: do this in css??
 jQuery(window).load(function () {
-    jQuery('span.imgcaption').each(function () {
+    jQuery('span.imgcaption.img').each(function () {
         //set imgcaption width equal to image
         var $imgcaption = jQuery(this);
         var width = $imgcaption.find('img').width();

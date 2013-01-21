@@ -4,8 +4,6 @@
  *
  * Syntax: <imgref linkname> - creates a figure link to an image
  *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
- *         <tabref linkname> - creates a table link to a table
- *         <tabcaption linkname <orientation> | Image caption> Image/Table</tabcaption>
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Martin Heinemann <martinheinemann@tudor.lu>
@@ -58,7 +56,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      */
     function accepts($mode) {
         $allowedsinglemodes = array(
-            'table', 'media', //allowed content
+            'media', //allowed content
             'internallink', 'externallink', 'linebreak', //clickable img allowed
             'emaillink', 'windowssharelink', 'filelink'
         );
@@ -74,12 +72,10 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      */
     function connectTo($mode) {
         $this->Lexer->addEntryPattern('<imgcaption.*?>(?=.*?</imgcaption>)', $mode, 'plugin_imagereference_imgcaption');
-        $this->Lexer->addEntryPattern('<tabcaption.*?>(?=.*?</tabcaption>)', $mode, 'plugin_imagereference_imgcaption');
 
     }
 
     function postConnect() {
-        $this->Lexer->addExitPattern('</tabcaption>', 'plugin_imagereference_imgcaption');
         $this->Lexer->addExitPattern('</imgcaption>', 'plugin_imagereference_imgcaption');
     }
 
@@ -256,7 +252,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      */
     function _capstart($data) {
 
-        $layout = '<span class="imgcaption';
+        $layout = '<span class="imgcaption'.($data['type'] =='img' ? ' img':'');
         if($data['classes'] != "") {
             $layout .= $data['classes'];
         }

@@ -3,9 +3,7 @@
      * Plugin imagereference
      *
      * Syntax: <imgref linkname> - creates a figure link to an image
-     *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
      *         <tabref linkname> - creates a table link to a table
-     *         <tabcaption linkname <orientation> | Image caption> Image/Table</tabcaption>
      *
      * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
      * @author     Martin Heinemann <info@martinheinemann.net>
