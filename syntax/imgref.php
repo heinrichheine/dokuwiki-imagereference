@@ -12,11 +12,6 @@
 
     if(!defined('DOKU_INC')) die();
 
-    if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
-    if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-    if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
-
-    require_once DOKU_PLUGIN.'syntax.php';
     /**
      * All DokuWiki plugins to extend the parser/rendering mechanism
      * need to inherit from this class
@@ -92,7 +87,7 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
      * @return bool If rendering was successful.
      */
     function render($mode, &$renderer, $data) {
-        global $ID;
+        global $ID, $ACT;
         if($data === false) return false;
 
         switch($mode) {
@@ -105,7 +100,11 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
                 resolve_pageid(getNS($ID), $data['page'], $exists);
 
                 //determine referencenumber
-                $caprefs   = p_get_metadata($data['page'], 'captionreferences '.$data['type']);
+                if($ACT == 'preview' && $data['page'] == $ID) {
+                    $caprefs = syntax_plugin_imagereference_imgcaption::getCaptionreferences($ID, $data['type']);
+                } else {
+                    $caprefs = p_get_metadata($data['page'], 'captionreferences '.$data['type']);
+                }
                 $refNumber = array_search($data['caprefname'], $caprefs);
 
                 if(!$refNumber) {
