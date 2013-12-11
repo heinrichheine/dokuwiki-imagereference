@@ -56,7 +56,7 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
      * @param Doku_Handler    $handler The handler
      * @return array Data for the renderer
      */
-    function handle($match, $state, $pos, &$handler) {
+    function handle($match, $state, $pos, Doku_Handler &$handler) {
         $reftype = substr($match, 1, 3);
         $ref = substr($match, 7, -1);
 
@@ -86,7 +86,7 @@ class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
      * @param array          $data      The data from the handler function
      * @return bool If rendering was successful.
      */
-    function render($mode, &$renderer, $data) {
+    function render($mode, Doku_Renderer &$renderer, $data) {
         global $ID, $ACT;
         if($data === false) return false;
 

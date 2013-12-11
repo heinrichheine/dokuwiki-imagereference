@@ -83,7 +83,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      * @param Doku_Handler    $handler The handler
      * @return array Data for the renderer
      */
-    public function handle($match, $state, $pos, &$handler) {
+    public function handle($match, $state, $pos, Doku_Handler &$handler) {
         global $ACT;
         switch($state) {
             case DOKU_LEXER_ENTER :
@@ -125,7 +125,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      * @param array          $indata    The data from the handler function
      * @return bool If rendering was successful.
      */
-    public function render($mode, &$renderer, $indata) {
+    public function render($mode, Doku_Renderer &$renderer, $indata) {
         global $ID, $ACT;
         list($case, $data) = $indata;
 
