@@ -44,7 +44,11 @@ class syntax_plugin_imagereference_tabcaption extends syntax_plugin_imagereferen
      * @return bool true if $mode is accepted
      */
     public function accepts($mode) {
-        if($mode == 'table') return true;
+        $allowedsinglemodes = array(
+            'table', //allowed content
+            'plugin_diagram_main'    //plugins
+        );
+        if(in_array($mode, $allowedsinglemodes)) return true;
 
         return parent::accepts($mode);
     }
