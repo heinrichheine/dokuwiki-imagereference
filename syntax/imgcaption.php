@@ -54,7 +54,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
             'media', //allowed content
             'internallink', 'externallink', 'linebreak', //clickable img allowed
             'emaillink', 'windowssharelink', 'filelink',
-            'plugin_graphviz'
+            'plugin_graphviz', 'plugin_ditaa'    //plugins
         );
         if(in_array($mode, $allowedsinglemodes)) return true;
 
