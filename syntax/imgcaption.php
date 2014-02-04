@@ -53,7 +53,8 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
         $allowedsinglemodes = array(
             'media', //allowed content
             'internallink', 'externallink', 'linebreak', //clickable img allowed
-            'emaillink', 'windowssharelink', 'filelink'
+            'emaillink', 'windowssharelink', 'filelink',
+            'plugin_graphviz'
         );
         if(in_array($mode, $allowedsinglemodes)) return true;
 
