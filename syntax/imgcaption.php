@@ -297,7 +297,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
      * @var string $captionStart opening tag of caption, image/table dependent
      * @var string $captionEnd closing tag of caption, image/table dependent
      */
-    protected $captionStart = '<span class="imgcaption%s">';
+    protected $captionStart = '<span id="%s" class="imgcaption%s">';
     protected $captionEnd   = '</span>';
 
     /**
@@ -309,8 +309,9 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     protected function _capstart($data) {
       return sprintf(
           $this->captionStart,
+          $data['type'].'_'.cleanID($data['caprefname']),
           (strpos($data['classes'], 'center') == false ? '':' center'),
-          $data['classes']
+          $data['classes']  //needed for tabcaption
       ).DOKU_LF;
     }
 
@@ -323,9 +324,9 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
     protected function _capend($data) {
         return DOKU_LF
                 .'<span class="undercaption">'.DOKU_LF
-                    .DOKU_TAB.$this->getLang($data['type'].'short').' '.$data['refnumber'].($data['caption'] ? ': ' : '').DOKU_LF
-                    .DOKU_TAB.'<a name="'.$data['type'].'_'.cleanID($data['caprefname']).'">'.hsc($data['caption']).'</a>'.DOKU_LF
-                    .DOKU_TAB.'<a href=" "><span></span></a>'.DOKU_LF
+                    .DOKU_TAB.$this->getLang($data['type'].'short').' '.$data['refnumber'].($data['caption'] ? ': ' : '')
+                    .' '.hsc($data['caption'])
+                    .' <a href=" "><span></span></a>'.DOKU_LF
                 .'</span>'.DOKU_LF
             . $this->captionEnd;
     }
