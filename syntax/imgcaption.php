@@ -198,7 +198,7 @@ class syntax_plugin_imagereference_imgcaption extends DokuWiki_Syntax_Plugin {
                         } elseif(strpos($data['classes'], 'right') !== false) {
                             $orientation = "\\right";
                         }
-                        $renderer->doc .= "\\begin{".$floattype."}[H!]{".$orientation."}";
+                        $renderer->doc .= "\\begin{".$floattype."}[!h]{".$orientation."}";
                         return true;
 
                     case 'data' :
