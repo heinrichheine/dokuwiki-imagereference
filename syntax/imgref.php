@@ -1,129 +1,124 @@
 <?php
-/**
- * Plugin imagereference
- *
- * Syntax: <imgref linkname> - creates a figure link to an image
- *         <imgcaption linkname <orientation> | Image caption> Image/Table</imgcaption>
- * 
- * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Martin Heinemann <info@martinheinemann.net>
- */
- 
-if (!defined('DOKU_INC')) die();
+    /**
+     * Plugin imagereference
+     *
+     * Syntax: <imgref linkname> - creates a figure link to an image
+     *         <tabref linkname> - creates a table link to a table
+     *
+     * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
+     * @author     Martin Heinemann <info@martinheinemann.net>
+     * @author     Gerrit Uitslag <klapinklapin@gmail.com>
+     */
 
-if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+    if(!defined('DOKU_INC')) die();
 
-require_once DOKU_PLUGIN.'syntax.php';
-/**
- * All DokuWiki plugins to extend the parser/rendering mechanism
- * need to inherit from this class
- */
+    /**
+     * All DokuWiki plugins to extend the parser/rendering mechanism
+     * need to inherit from this class
+     */
 class syntax_plugin_imagereference_imgref extends DokuWiki_Syntax_Plugin {
- 	
-	
-	var $_figure_name_array = array("");
-	var $_figure_map = array();
-	
-	
-    function getInfo(){
-        return array( 
-            'author' => 'Martin Heinemann',
-            'email'  => 'info@martinheinemann.net',
-            'date'   => '2012-08-21',
-            'name'   => 'imagereference',
-            'desc'   => 'Create image references like latex is doing with figures',
-            'url'    => 'http://wiki.splitbrain.org/wiki:plugins',
-        );
+
+    /**
+     * @return string Syntax type
+     */
+    function getType() {
+        return 'substition';
     }
- 
-   
-   function getType(){ return 'protected';}
-    function getAllowedTypes() { return array('container','substition','protected','disabled','formatting','paragraphs'); }
-    function getPType(){ return 'normal';}
-
-    // must return a number lower than returned by native 'code' mode (200)
-    function getSort(){ return 197; }
-
-    // override default accepts() method to allow nesting 
-    // - ie, to get the plugin accepts its own entry syntax
-    function accepts($mode) {
-        if ($mode == substr(get_class($this), 7)) return true;
-
-        return parent::accepts($mode);
+    /**
+     * @return string Paragraph type
+     */
+    function getPType() {
+        return 'normal';
     }
- 
-   /**
-    * Connect lookup pattern to lexer.
-    *
-    * @param $aMode String The desired rendermode.
-    * @return none
-    * @public
-    * @see render()
-    */
+    /**
+     * @return int Sort order
+     */
+    function getSort() {
+        return 197;
+    }
+
+    /**
+     * Connect lookup pattern to lexer.
+     *
+     * @param string $mode Parser mode
+     */
     function connectTo($mode) {
-      $this->Lexer->addSpecialPattern('<imgref\s[^\r\n]*?>',$mode, 'plugin_imagereference_imgref');
-    }
- 
-    function postConnect() {
-    }
- 	
- 
-    function handle($match, $state, $pos, &$handler){
-    	
-        switch ($state) {
-          case DOKU_LEXER_SPECIAL : {
-                $ref = substr($match, 8, -1);
-                return array('imgref', $ref);
-          }
-        }
-        
-        return array();
-    }
- 
-    function render($mode, &$renderer, $indata) {
-        list($case, $data) = $indata;
-        if($mode == 'xhtml'){
-            switch ($case) {
-               case 'imgref' :  {
-                    $_figure_name_array = $renderer->meta['imagereferences'];
-                    if (is_array($_figure_name_array)) {
-                        $refNumber = array_search($data, $_figure_name_array);
-                        if ($refNumber == null || $refNumber == "")
-                        $refNumber = "##";
-                        $str = "<a href=\"#".$data."\">".$this->getLang('figure').$refNumber." </a>";
-                        $renderer->doc .= $str; break;
-                    } else {
-                        $warning = "$data<sup style=\"color:#FF0000;\">".$this->getLang('error_imgrefbeforeimgcaption')."</sup>";
-                        $renderer->doc .= $warning;
-                    }
-               }
-                // data is mostly empty!!!
-                case 'data' : $renderer->doc .= $data; break; 
-            }
-            
-            return true;
-        }
-        if($mode == 'latex') {
-        	// -----------------------------------------
-        	switch ($case) {
-               case 'imgref' :  {
-	               	/* --------------------------------------- */
-	               	$renderer->doc .= "\\ref{".$data."}"; break;
-	               	/* --------------------------------------- */
-               }
+        $this->Lexer->addSpecialPattern('<imgref.*?>', $mode, 'plugin_imagereference_imgref');
+        $this->Lexer->addSpecialPattern('<tabref.*?>', $mode, 'plugin_imagereference_imgref');
 
-			   case 'data' :  $renderer->doc .= trim($data); break;
-            }
-            
-            return true;
-        	// -----------------------------------------
+    }
+    /**
+     * Handle matches of the imgref syntax
+     *
+     * @param string $match The match of the syntax
+     * @param int    $state The state of the handler
+     * @param int    $pos The position in the document
+     * @param Doku_Handler    $handler The handler
+     * @return array Data for the renderer
+     */
+    function handle($match, $state, $pos, Doku_Handler &$handler) {
+        $reftype = substr($match, 1, 3);
+        $ref = substr($match, 7, -1);
+
+        $parts = explode('#', $ref, 2);
+        if(count($parts) == 1) {
+            $page = '';
+            $ref = $parts[0];
+        } else {
+            $page = $parts[0];
+            $ref = $parts[1];
+        }
+
+        if($ref != '') {
+            return array(
+                'page' => trim($page),
+                'caprefname' => trim($ref),
+                'type'    => $reftype
+            );
         }
         return false;
     }
-    
+    /**
+     * Render xhtml output or metadata
+     *
+     * @param string         $mode      Renderer mode (supported modes: xhtml and metadata)
+     * @param Doku_Renderer  $renderer  The renderer
+     * @param array          $data      The data from the handler function
+     * @return bool If rendering was successful.
+     */
+    function render($mode, Doku_Renderer &$renderer, $data) {
+        global $ID, $ACT;
+        if($data === false) return false;
+
+        switch($mode) {
+            case 'xhtml' :
+                /** @var Doku_Renderer_xhtml $renderer */
+
+                if($data['page'] == '') {
+                    $data['page'] = $ID;
+                }
+                resolve_pageid(getNS($ID), $data['page'], $exists);
+
+                //determine referencenumber
+                if($ACT == 'preview' && $data['page'] == $ID) {
+                    $caprefs = syntax_plugin_imagereference_imgcaption::getCaptionreferences($ID, $data['type']);
+                } else {
+                    $caprefs = p_get_metadata($data['page'], 'captionreferences '.$data['type']);
+                }
+                $refNumber = array_search($data['caprefname'], $caprefs);
+
+                if(!$refNumber) {
+                    $refNumber = "##";
+                }
+
+                $renderer->doc .= '<a href="'.wl($data['page']).'#'.$data['type'].'_'.cleanID($data['caprefname']).'">'.$this->getLang($data['type'].'full').'&nbsp;'.$refNumber.'</a>';
+                return true;
+
+            case 'latex' :
+                $renderer->doc .= $this->getLang($data['type'].'full')." \\ref{".$data['caprefname']."}";
+                return true;
+        }
+        return false;
+    }
 }
- 
 //Setup VIM: ex: et ts=4 enc=utf-8 :
-?>
